@@ -67,6 +67,53 @@ sudo systemctl enable lora_pkt_fwd_local_listener
 sudo journalctl -u lora_pkt_fwd_local_listener -f
 ```
 
+## Integração com Node-RED
+
+O Node-RED não possui nó UDP nativo no core; o caminho mais simples para levar os
+frames UDP do SX1302 até o Node-RED é via **MQTT**.
+
+Arquitetura atualizada:
+
+```
+[Sensor(es) LoRaWAN] → [SX1302 via lora_pkt_fwd] → UDP 127.0.0.1:1700
+                                                        ↓
+                                          [Python UDP Listener]
+                                          (publica no MQTT: lora/gateway/RX)
+                                                        ↓
+                                          [Mosquitto MQTT Broker] → [Node-RED MQTT in]
+```
+
+### Arquivos relacionados
+
+- `contrib/python-udp-listener/lora_pkt_fwd_listener.py` — listener UDP que também publica no MQTT (`MQTT_HOST`, `MQTT_PORT`, `MQTT_TOPIC`).
+- `contrib/python-udp-listener/lora_gateway_rx.json` — flow exemplo do Node-RED (MQTT in → debug).
+
+### Passo a passo no Raspberry Pi
+
+```bash
+# 1. Instalar Mosquitto (broker MQTT)
+sudo apt update
+sudo apt install -y mosquitto mosquitto-clients
+sudo systemctl enable --now mosquitto
+
+# 2. Instalar Node-RED
+#    (via NodeSource + npm, ou via deb oficial)
+curl -sL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+sudo npm install -g node-red
+
+# 3. Instalar dependência MQTT do listener
+sudo pip3 install paho-mqtt
+
+# 4. Reiniciar listener (publica no MQTT)
+sudo systemctl restart lora_pkt_fwd_local_listener
+
+# 5. Subir Node-RED e importar o flow
+#    - Acessar http://<ip-do-raspberry>:1880
+#    - Menu > Import > colar/importar o conteúdo de lora_gateway_rx.json
+#    - Deploy
+```
+
 ## Commits relacionados
 
 - `7812978` feat: systemd config

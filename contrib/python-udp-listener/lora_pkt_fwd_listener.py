@@ -4,16 +4,18 @@ SX1302 LoRaWAN UDP Listener
 ==========================
 
 Escuta datagrams UDP no protocolo Semtech packet forwarder (PUSH_DATA) enviados
-pelo lora_pkt_fwd, e decodifica os frames LoRaWAN (Base64 -> binario).
+pelo lora_pkt_fwd, decodifica os frames LoRaWAN (Base64 -> binario) e, opcionalmente,
+publica no MQTT para integracao com Node-RED.
 
 O lora_pkt_fwd (configurado em global_conf.json / local_conf.json) envia os
 frames recebidos para o server_address:serv_port_up (nesse setup: 127.0.0.1:1700).
 
 Este listener NAO substitui um network server completo (nao processa
-ativacoes / nao gera downlinks): serve apenas para capturar e inspecionar os
+ativacoes / nao gera downlinks): serve para capturar e inspecionar os
 frames UPLINK recebidos do SX1302.
 """
 
+import os
 import socket
 import json
 import base64
@@ -21,6 +23,30 @@ import base64
 LISTEN_HOST = "127.0.0.1"
 LISTEN_PORT = 1700
 PUSH_DATA_ID = 0x00
+
+MQTT_HOST = os.environ.get("MQTT_HOST", "127.0.0.1")
+MQTT_PORT = int(os.environ.get("MQTT_PORT", "1883"))
+MQTT_TOPIC = os.environ.get("MQTT_TOPIC", "lora/gateway/RX")
+
+try:
+    import paho.mqtt.client as mqtt
+
+    _mqtt_client = mqtt.Client()
+    _mqtt_client.connect(MQTT_HOST, MQTT_PORT, 60)
+    _mqtt_client.loop_start()
+    MQTT_ENABLED = True
+except Exception:
+    _mqtt_client = None
+    MQTT_ENABLED = False
+
+
+def publish(pkt: dict) -> None:
+    if not MQTT_ENABLED:
+        return
+    try:
+        _mqtt_client.publish(MQTT_TOPIC, json.dumps(pkt), qos=0)
+    except Exception as e:
+        print(f"[ERRO] MQTT publish failed: {e}", flush=True)
 
 
 def handle_push_data(data: bytes) -> None:
@@ -61,12 +87,17 @@ def handle_push_data(data: bytes) -> None:
             f"fPort={fport} b64={b64data}",
             flush=True,
         )
+        publish(pkt)
 
 
 def main() -> None:
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((LISTEN_HOST, LISTEN_PORT))
-    print(f"[LISTENER] UDP listener at {LISTEN_HOST}:{LISTEN_PORT} ready", flush=True)
+    print(
+        f"[LISTENER] UDP listener at {LISTEN_HOST}:{LISTEN_PORT} ready "
+        f"(MQTT={'ON' if MQTT_ENABLED else 'OFF'})",
+        flush=True,
+    )
     while True:
         try:
             data, addr = sock.recvfrom(65535)
