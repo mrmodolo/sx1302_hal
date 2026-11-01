@@ -112,6 +112,25 @@ sudo systemctl restart lora_pkt_fwd_local_listener
 #    - Acessar http://<ip-do-raspberry>:1880
 #    - Menu > Import > colar/importar o conteúdo de lora_gateway_rx.json
 #    - Deploy
+
+## Serviço systemd do Node-RED
+
+O Node-RED também possui unit no repositório:
+
+```bash
+contrib/systemd/node-red.service
+```
+
+Instalação/uso no Raspberry Pi:
+
+```bash
+sudo cp contrib/systemd/node-red.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now node-red
+sudo journalctl -u node-red -f
+```
+
+O Node-RED admin fica disponível em `http://<ip-do-raspberry>:1880`.
 ```
 
 ## Commits relacionados
