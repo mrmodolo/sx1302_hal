@@ -11,7 +11,7 @@
         "id": "mqtt_broker_local",
         "type": "mqtt-broker",
         "name": "Local Mosquitto",
-        "broker": "phobos.local",
+        "broker": "127.0.0.1",
         "port": "1883",
         "clientid": "",
         "autoConnect": true,
