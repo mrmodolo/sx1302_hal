@@ -19,6 +19,13 @@
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RST);
 
+// Contador de pacotes enviados
+int packetCounter = 0;
+
+// Valores simulados de sensores (substitua pela leitura real se tiver sensor conectado)
+float temperature = 0.0;
+float humidity = 0.0;
+
 void setup() {
   Serial.begin(115200);
   while (!Serial);
@@ -58,16 +65,16 @@ void setup() {
   LoRa.setSyncWord(0x34);   // Sync word LoRaWAN (gateway espera 0x34)
   LoRa.enableCrc();
 
-  // 5. Escreve mensagem na tela
+  // Tela inicial
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
-  display.setCursor(0, 10);
+  display.setCursor(0, 0);
   display.println("Heltec LoRa 32 V2");
-  display.setCursor(0, 30);
-  display.println("Display: OK!");
-  display.setCursor(0, 50);
-  display.println("SX1276 915MHz");
+  display.setCursor(0, 16);
+  display.println("LoRa pronto!");
+  display.setCursor(0, 32);
+  display.println("Aguardando envio...");
   display.display();
 
   Serial.println("Display inicializado com sucesso!");
@@ -75,11 +82,39 @@ void setup() {
 }
 
 void loop() {
-  // Mantém a tela acesa
+  // --- Leitura dos sensores (substitua por leitura real se tiver sensor conectado) ---
+  // Exemplo com sensor DHT11/DHT22: temperature = dht.readTemperature(); humidity = dht.readHumidity();
+  temperature = 20.0 + (random(0, 150) / 10.0);   // simula 20.0 a 35.0 °C
+  humidity    = 40.0 + (random(0, 300) / 10.0);    // simula 40.0 a 70.0 %
+
+  packetCounter++;
+
+  // Monta o payload com os dados dos sensores
+  String payload = "T:" + String(temperature, 1) + "C,H:" + String(humidity, 1) + "%,N:" + String(packetCounter);
+
+  // Envia via LoRa
   LoRa.beginPacket();
-  LoRa.print("Hello from ESP32!");
+  LoRa.print(payload);
   LoRa.endPacket();
 
-  Serial.println("Pacote enviado");
-  delay(10000);  // a cada 10 segundos  
+  // Log no Serial Monitor
+  Serial.println("Enviado: " + payload);
+
+  // Atualiza o display com os dados enviados
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0, 0);
+  display.println("SX1302 Gateway Test");
+  display.setCursor(0, 16);
+  display.println("Temp: " + String(temperature, 1) + " C");
+  display.setCursor(0, 28);
+  display.println("Hum:  " + String(humidity, 1) + " %");
+  display.setCursor(0, 40);
+  display.println("Pkt #" + String(packetCounter));
+  display.setCursor(0, 52);
+  display.println("Enviado OK");
+  display.display();
+
+  delay(10000);  // envia a cada 10 segundos
 }
