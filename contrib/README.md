@@ -103,10 +103,18 @@ sudo apt install -y mosquitto mosquitto-clients
 sudo systemctl enable --now mosquitto
 
 # 2. Instalar Node-RED
-#    (via NodeSource + npm, ou via deb oficial)
-curl -sL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt install -y nodejs
-sudo npm install -g node-red
+#    Recomendado: script oficial do Node-RED para RPi/Debian
+bash <(curl -sL https://raw.githubusercontent.com/node-red/linux-installers/master/deb/update-nodejs-and-nodered)
+
+#    (alternativa manual, se preferir)
+# curl -sL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+# sudo apt install -y nodejs
+# sudo npm install -g node-red
+
+# Observacao: o script oficial cria o servico "nodered" (sem hifen).
+# Se for usar a unit deste repo (node-red.service), desabilite o oficial:
+#   sudo systemctl disable --now nodered
+#   sudo systemctl enable --now node-red
 
 # 3. Instalar dependência MQTT do listener
 sudo pip3 install paho-mqtt
