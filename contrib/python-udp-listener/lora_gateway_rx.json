@@ -4,7 +4,7 @@
         "type": "tab",
         "label": "LoRa Gateway RX",
         "disabled": false,
-        "info": "Recebe frames LoRaWAN do gateway SX1302 via MQTT (tópico lora/gateway/RX).",
+        "info": "Recebe frames LoRaWAN do gateway SX1302 via MQTT (tópico lora/gateway/RX) e decodifica o payload.",
         "env": []
     },
     {
@@ -25,6 +25,7 @@
         "birthPayload": "",
         "birthMsg": {},
         "closeTopic": "",
+        "closeQos": "0",
         "closePayload": "",
         "closeMsg": {},
         "willTopic": "",
@@ -33,23 +34,6 @@
         "willMsg": {},
         "userProps": "",
         "sessionExpiry": ""
-    },
-    {
-        "id": "f05b0a85fab0c433",
-        "type": "debug",
-        "z": "4d2b716d16ffd364",
-        "name": "LoRa RX Debug",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "payload",
-        "targetType": "msg",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 420,
-        "y": 80,
-        "wires": []
     },
     {
         "id": "55668c4e8294384d",
@@ -68,8 +52,44 @@
         "y": 80,
         "wires": [
             [
+                "decode_payload"
+            ]
+        ]
+    },
+    {
+        "id": "decode_payload",
+        "type": "function",
+        "z": "4d2b716d16ffd364",
+        "name": "Decodificar payload LoRa",
+        "func": "const pkt = msg.payload;\nif (!pkt || !pkt.data) {\n    return null;\n}\n\n// Decodificar Base64 -> string\nconst raw = Buffer.from(pkt.data, 'base64').toString('utf8');\nmsg.rawPayload = raw;\n\n// Parsear \"T:25.3C,H:60.2%,N:1\"\nconst result = {};\nraw.split(',').forEach(part => {\n    const [key, val] = part.split(':');\n    const num = parseFloat(val);\n    if (key === 'T') result.temperature = num;\n    else if (key === 'H') result.humidity = num;\n    else if (key === 'N') result.packet = parseInt(val);\n});\n\nmsg.payload = result;\nmsg.rssi = pkt.rssi;\nmsg.snr = pkt.lsnr;\nmsg.freq = pkt.freq;\nmsg.time = pkt.time;\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 330,
+        "y": 80,
+        "wires": [
+            [
                 "f05b0a85fab0c433"
             ]
         ]
+    },
+    {
+        "id": "f05b0a85fab0c433",
+        "type": "debug",
+        "z": "4d2b716d16ffd364",
+        "name": "LoRa RX Debug",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 560,
+        "y": 80,
+        "wires": []
     }
 ]
