@@ -179,16 +179,22 @@ Para visualizar os dados dos sensores em tempo real, instale o pacote de dashboa
 
 ```bash
 # No Raspberry Pi
-sudo npm install -g node-red-dashboard
+cd /home/modolo/.node-red
+npm install node-red-dashboard
 sudo systemctl restart nodered
 ```
 
-O flow `lora_dashboard.json` inclui:
+> ⚠️ Instale no **userDir** (`/home/modolo/.node-red`), não globalmente.
+> O Node-RED (rodando como usuário `modolo`) só encontra os nós
+> instalados no seu próprio `node_modules`.
 
-- **2 gauges** (temperatura °C e umidade %) no grupo "Sensores"
-- **1 gráfico de linha** (temperatura ao longo do tempo) no grupo "Histórico"
-- **1 texto** com RSSI, SNR, frequência e número do pacote no grupo "Info do Pacote"
-- **1 debug** (mensagens no painel lateral)
+### Verificar se instalou
+
+```bash
+ls /home/modolo/.node-red/node_modules/node-red-dashboard
+```
+
+Se a pasta existir, o Node-RED carregará os nós `ui_*` automaticamente.
 
 ### Como usar
 
