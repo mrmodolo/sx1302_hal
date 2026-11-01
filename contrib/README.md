@@ -179,27 +179,42 @@ sudo systemctl restart nodered
 
 ### Criar o dashboard manualmente (recomendado)
 
-O Dashboard 2.0 usa nós com **hífen** (`ui-gauge`, `ui-chart`, `ui-text`, `ui-page`,
-`ui-group`), não com underscore (`ui_gauge`). Eles aparecem na paleta do Node-RED
-na categoria **dashboard**.
+No Dashboard 2.0, as **páginas** e **grupos** são **config nodes** (não aparecem
+na paleta principal). Eles são criados automaticamente ao configurar um widget:
 
-1. Acesse `http://phobos.local:1880`
-2. Na paleta esquerda, procure a categoria **dashboard**
-3. Arraste para o canvas:
-   - **ui-page** (cria uma página do dashboard)
-   - **ui-group** (cria um grupo dentro da página)
-   - **ui-gauge** (gauge de temperatura)
-   - **ui-gauge** (gauge de umidade)
-   - **ui-chart** (gráfico de histórico)
-   - **ui-text** (info do pacote)
-4. Conecte: **MQTT in** → **function (decode)** → [gauge_temp, gauge_hum, chart, text, debug]
-5. Configure cada nó:
+1. Arraste um widget da paleta (ex.: `gauge`, `chart`, `text`)
+2. Duplo-clique no widget → no campo **Group**, clique no **lápis (pencil)**
+3. Na janela que abrir:
+   - **Name**: nome do grupo (ex.: "Sensores")
+   - **Page**: clique no **lápis** → **Name**: nome da página (ex.: "LoRa Gateway") → **Add**
+   - Clique **Add** (grupo)
+4. Configure o widget:
    - **ui-gauge (temp)**: Value = `{{msg.payload.temperature}}`, Min=0, Max=50, Units=°C
    - **ui-gauge (hum)**: Value = `{{msg.payload.humidity}}`, Min=0, Max=100, Units=%
    - **ui-chart**: Value = `{{msg.payload.temperature}}`, Label = Temperatura (°C)
    - **ui-text**: Value format = `RSSI: {{msg.payload.rssi}} dBm | SNR: {{msg.payload.snr}} | Pkt #{{msg.payload.packet}}`
-6. **Deploy**
-7. Acesse o dashboard em: `http://phobos.local:1880/dashboard`
+5. Arraste mais widgets e associe ao mesmo grupo/página
+6. Conecte: **MQTT in** → **function (decode)** → [gauge_temp, gauge_hum, chart, text, debug]
+7. **Deploy**
+8. Acesse o dashboard em: `http://phobos.local:1880/dashboard`
+
+> **Nota:** `ui-page`, `ui-group` e `ui-base` não aparecem na paleta — são criados
+> automaticamente ao configurar um widget. A paleta mostra apenas os **widgets**
+> (gauge, chart, text, button, switch, form, table, etc.).
+
+### Widgets disponíveis na paleta
+
+| Widget | Tipo | Descrição |
+|---|---|---|
+| `gauge` | `ui-gauge` | Gauge (temperatura, umidade, etc.) |
+| `chart` | `ui-chart` | Gráfico de linha/histórico |
+| `text` | `ui-text` | Texto (info do pacote) |
+| `button` | `ui-button` | Botão |
+| `switch` | `ui-switch` | Switch on/off |
+| `form` | `ui-form` | Formulário |
+| `table` | `ui-table` | Tabela |
+| `markdown` | `ui-markdown` | Markdown |
+| `template` | `ui-template` | HTML/JS customizado |
 
 ### Como ficaria o dashboard
 
