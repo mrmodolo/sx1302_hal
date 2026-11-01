@@ -36,7 +36,7 @@ ChirpStack para uso residencial).
 | Arquivo | Descrição |
 |---|---|
 | `lora_pkt_fwd_listener.py` | UDP listener — escuta PUSH_DATA e decodifica frames |
-| `lora_pkt_fwd_listener.service` | Systemd — roda o listener (unit path → `/opt/udp-listener/`) |
+| `lora_pkt_fwd_local_listener.service` | Systemd — roda o listener (unit path → `/opt/udp-listener/`) |
 
 ## Como funciona o listener
 
@@ -55,6 +55,8 @@ ChirpStack para uso residencial).
 # Copiar listener
 sudo mkdir -p /opt/udp-listener
 sudo cp <repo>/contrib/python-udp-listener/lora_pkt_fwd_listener.py /opt/udp-listener/
+sudo cp <repo>/contrib/python-udp-listener/lora_pkt_fwd_local_listener.service /etc/systemd/system/
+sudo systemctl daemon-reload
 
 # Reiniciar forwarder + listener
 sudo systemctl restart lora_pkt_fwd_local
