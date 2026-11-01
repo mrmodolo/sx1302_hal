@@ -58,6 +58,10 @@ sudo cp <repo>/contrib/python-udp-listener/lora_pkt_fwd_listener.py /opt/udp-lis
 sudo cp <repo>/contrib/python-udp-listener/lora_pkt_fwd_local_listener.service /etc/systemd/system/
 sudo systemctl daemon-reload
 
+# Se você tinha instalado a unit antiga (lora_pkt_fwd_listener.service), apague-a:
+sudo rm -f /etc/systemd/system/lora_pkt_fwd_listener.service
+sudo systemctl daemon-reload
+
 # Reiniciar forwarder + listener
 sudo systemctl restart lora_pkt_fwd_local
 sudo systemctl restart lora_pkt_fwd_local_listener
