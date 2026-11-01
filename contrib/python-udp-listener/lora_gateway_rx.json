@@ -1,72 +1,61 @@
-{
-  "version": "0.1.0",
-  "description": "LoRaWAN SX1302 UDP -> MQTT -> Node-RED",
-  "defaults": {},
-  "x": 0,
-  "y": 0,
-  "nodes": [
-    {
-      "id": "mqtt_broker_1",
-      "type": "mqtt-broker",
-      "name": "Local Mosquitto",
-      "broker": "127.0.0.1",
-      "port": "1883",
-      "clientid": "",
-      "usetls": false,
-      "compatmode": true,
-      "keepClean": true,
-      "cleansession": false,
-      "birthTopic": "",
-      "birthMsg": "",
-      "closeTopic": "",
-      "closeMsg": "",
-      "willTopic": "",
-      "willMsg": ""
-    },
-    {
-      "id": "mqtt_in_1",
-      "type": "mqtt in",
-      "z": "nodered_flow_1",
-      "name": "LoRa Gateway RX",
-      "topic": "lora/gateway/RX",
-      "qos": 0,
-      "datatype": "auto",
-      "broker": "mqtt_broker_1",
-      "x": 160,
-      "y": 80,
-      "wires": [
-        [
-          "debug_1"
-        ]
+[
+  {
+    "id": "flow_loRaGatewayRx",
+    "type": "tab",
+    "label": "LoRa Gateway RX",
+    "disabled": false,
+    "info": "Recebe frames LoRaWAN do gateway SX1302 via MQTT (tópico lora/gateway/RX)."
+  },
+  {
+    "id": "mqtt_broker_local",
+    "type": "mqtt-broker",
+    "name": "Local Mosquitto",
+    "broker": "127.0.0.1",
+    "port": "1883",
+    "clientid": "",
+    "usetls": false,
+    "compatmode": true,
+    "keepClean": true,
+    "cleansession": false,
+    "birthTopic": "",
+    "birthMsg": "",
+    "closeTopic": "",
+    "closeMsg": "",
+    "willTopic": "",
+    "willMsg": ""
+  },
+  {
+    "id": "mqtt_in_loRaGatewayRx",
+    "type": "mqtt in",
+    "z": "flow_loRaGatewayRx",
+    "name": "LoRa Gateway RX",
+    "topic": "lora/gateway/RX",
+    "qos": 0,
+    "datatype": "auto",
+    "broker": "mqtt_broker_local",
+    "x": 160,
+    "y": 80,
+    "wires": [
+      [
+        "debug_loRaGatewayRx"
       ]
-    },
-    {
-      "id": "debug_1",
-      "type": "debug",
-      "z": "nodered_flow_1",
-      "name": "LoRa RX Debug",
-      "active": true,
-      "tosidebar": true,
-      "console": 0,
-      "outputs": 0,
-      "noerr": 0,
-      "initialize": "",
-      "finalize": "",
-      "libs": [],
-      "x": 420,
-      "y": 80,
-      "wires": []
-    }
-  ],
-  "connections": [
-    {
-      "id": "conn_1",
-      "type": "mqtt in",
-      "from": ["mqtt_broker_1", "broker"],
-      "to": ["debug_1", "debug"],
-      "data": []
-    }
-  ],
-  "settings": {},
-  "disabled": false
-}
+    ]
+  },
+  {
+    "id": "debug_loRaGatewayRx",
+    "type": "debug",
+    "z": "flow_loRaGatewayRx",
+    "name": "LoRa RX Debug",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 420,
+    "y": 80,
+    "wires": []
+  }
+]
