@@ -6,8 +6,8 @@ Wants=network-online.target
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/opt/sx1302_hal/
-ExecStart=/usr/bin/python3 /opt/sx1302_hal/lora_pkt_fwd_listener.py
+WorkingDirectory=/opt/udp-listener/
+ExecStart=/usr/bin/python3 /opt/udp-listener/lora_pkt_fwd_listener.py
 Restart=always
 RestartSec=10
 
