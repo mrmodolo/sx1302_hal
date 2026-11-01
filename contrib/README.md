@@ -129,6 +129,27 @@ sudo systemctl restart lora_pkt_fwd_local_listener
 O Node-RED admin fica disponível em `http://<ip-do-raspberry>:1880`.
 ```
 
+## Teste com dispositivo ESP32 + SX1276
+
+Para validar a recepção do gateway sem um network server completo, use o sketch de
+exemplo incluído no repositório:
+
+- `examples/sx1276esp32/sketch_sx1276esp32.ino` — sketch Arduino para Heltec WiFi LoRa 32 V2 (SX1276)
+- `examples/sx1276esp32/README.md` — descrição da placa
+
+### Parâmetros críticos do sketch (devem bater com o gateway)
+
+| Parâmetro | Valor | Motivo |
+|---|---|---|
+| Frequência | 904.3 MHz | Bate com `chan_multiSF_2` do gateway (radio 0) |
+| Spreading Factor | 7 | Habilitado no gateway (`chan_multiSF_All`) |
+| Bandwidth | 125 kHz | Padrão do gateway |
+| Coding Rate | 4/5 | Padrão LoRaWAN |
+| Sync Word | `0x34` | Obrigatório — gateway SX1302 filtra por sync word LoRaWAN |
+| CRC | habilitado | Gateway marca `stat=1` (CRC OK) |
+
+> ⚠️ Se o Sync Word for diferente de `0x34`, o gateway **não recebe** o frame.
+
 ## Commits relacionados
 
 - `7812978` feat: systemd config
