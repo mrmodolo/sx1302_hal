@@ -8,7 +8,7 @@ Type=simple
 User=root
 WorkingDirectory=/opt/sx1302_hal/
 ExecStartPre=/opt/sx1302_hal/reset_lgw.sh
-ExecStart=/opt/sx1302_hal/lora_pkt_fwd -c /opt/sx1302_hal/global_conf.json
+ExecStart=/opt/sx1302_hal/lora_pkt_fwd -c /opt/sx1302_hal/local_conf.json
 Restart=always
 RestartSec=10
 
