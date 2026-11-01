@@ -112,9 +112,8 @@ bash <(curl -sL https://raw.githubusercontent.com/node-red/linux-installers/mast
 # sudo npm install -g node-red
 
 # Observacao: o script oficial cria o servico "nodered" (sem hifen).
-# Se for usar a unit deste repo (node-red.service), desabilite o oficial:
-#   sudo systemctl disable --now nodered
-#   sudo systemctl enable --now node-red
+#   sudo systemctl enable --now nodered
+#   sudo journalctl -u nodered -f
 
 # 3. Instalar dependência MQTT do listener
 sudo pip3 install paho-mqtt
@@ -126,23 +125,6 @@ sudo systemctl restart lora_pkt_fwd_local_listener
 #    - Acessar http://<ip-do-raspberry>:1880
 #    - Menu > Import > colar/importar o conteúdo de lora_gateway_rx.json
 #    - Deploy
-
-## Serviço systemd do Node-RED
-
-O Node-RED também possui unit no repositório:
-
-```bash
-contrib/systemd/node-red.service
-```
-
-Instalação/uso no Raspberry Pi:
-
-```bash
-sudo cp contrib/systemd/node-red.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now node-red
-sudo journalctl -u node-red -f
-```
 
 O Node-RED admin fica disponível em `http://<ip-do-raspberry>:1880`.
 ```
