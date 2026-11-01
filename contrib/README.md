@@ -116,7 +116,7 @@ bash <(curl -sL https://raw.githubusercontent.com/node-red/linux-installers/mast
 #   sudo journalctl -u nodered -f
 
 # 3. Instalar dependência MQTT do listener
-sudo pip3 install paho-mqtt
+sudo apt install -y python3-paho-mqtt
 
 # 4. Reiniciar listener (publica no MQTT)
 sudo systemctl restart lora_pkt_fwd_local_listener
