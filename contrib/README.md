@@ -175,28 +175,33 @@ done
 cd /home/mododo/.node-red
 npm install @flowfuse/node-red-dashboard
 sudo systemctl restart nodered
+
+# Verificar
+ls /home/mododo/.node-red/node_modules/@flowfuse/node-red-dashboard
 ```
 
-### Criar o dashboard manualmente (recomendado)
+### Criar o dashboard manualmente
 
-No Dashboard 2.0, as **páginas** e **grupos** são **config nodes** (não aparecem
-na paleta principal). Eles são criados automaticamente ao configurar um widget:
+No Dashboard 2.0, as **páginas** e **grupos** são **config nodes** criados
+automaticamente ao configurar um widget. Eles **não aparecem na paleta**.
 
-1. Arraste um widget da paleta (ex.: `gauge`, `chart`, `text`)
-2. Duplo-clique no widget → no campo **Group**, clique no **lápis (pencil)**
-3. Na janela que abrir:
+1. Acesse `http://phobos.local:1880`
+2. Na paleta esquerda, procure a categoria **dashboard**
+3. Arraste um widget (ex.: `gauge`) para o canvas
+   - O Dashboard cria automaticamente: página, grupo, tema e base
+4. Duplo-clique no widget → no campo **Group**, clique no **lápis (pencil)**
    - **Name**: nome do grupo (ex.: "Sensores")
    - **Page**: clique no **lápis** → **Name**: nome da página (ex.: "LoRa Gateway") → **Add**
    - Clique **Add** (grupo)
-4. Configure o widget:
+5. Configure o widget:
    - **ui-gauge (temp)**: Value = `{{msg.payload.temperature}}`, Min=0, Max=50, Units=°C
    - **ui-gauge (hum)**: Value = `{{msg.payload.humidity}}`, Min=0, Max=100, Units=%
    - **ui-chart**: Value = `{{msg.payload.temperature}}`, Label = Temperatura (°C)
    - **ui-text**: Value format = `RSSI: {{msg.payload.rssi}} dBm | SNR: {{msg.payload.snr}} | Pkt #{{msg.payload.packet}}`
-5. Arraste mais widgets e associe ao mesmo grupo/página
-6. Conecte: **MQTT in** → **function (decode)** → [gauge_temp, gauge_hum, chart, text, debug]
-7. **Deploy**
-8. Acesse o dashboard em: `http://phobos.local:1880/dashboard`
+6. Arraste mais widgets e associe ao mesmo grupo/página
+7. Conecte: **MQTT in** → **function (decode)** → [gauge_temp, gauge_hum, chart, text, debug]
+8. **Deploy**
+9. Acesse o dashboard em: `http://phobos.local:1880/dashboard`
 
 > **Nota:** `ui-page`, `ui-group` e `ui-base` não aparecem na paleta — são criados
 > automaticamente ao configurar um widget. A paleta mostra apenas os **widgets**
@@ -215,6 +220,10 @@ na paleta principal). Eles são criados automaticamente ao configurar um widget:
 | `table` | `ui-table` | Tabela |
 | `markdown` | `ui-markdown` | Markdown |
 | `template` | `ui-template` | HTML/JS customizado |
+| `text input` | `ui-text-input` | Campo de texto |
+| `dropdown` | `ui-dropdown` | Dropdown |
+| `slider` | `ui-slider` | Slider |
+| `audio` | `ui-audio` | Áudio |
 
 ### Como ficaria o dashboard
 
@@ -285,6 +294,8 @@ O sketch envia dados simulados de sensores (temperatura, umidade) no formato
   pacote legado `node-red-dashboard`. O legado é incompatível com Node-RED 5.0.
 - Os nós do Dashboard 2.0 usam **hífen** (`ui-gauge`, `ui-chart`, `ui-text`,
   `ui-page`, `ui-group`), não underscore (`ui_gauge`).
+- `ui-page`, `ui-group` e `ui-base` **não aparecem na paleta** — são config nodes
+  criados automaticamente ao configurar um widget.
 - A instalação do Dashboard 2.0 deve ser feita no **userDir** do Node-RED:
   `cd /home/mododo/.node-red && npm install @flowfuse/node-red-dashboard`.
 
