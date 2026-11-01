@@ -204,8 +204,8 @@ automaticamente ao configurar um widget. Eles **não aparecem na paleta**.
 9. Acesse o dashboard em: `http://phobos.local:1880/dashboard`
 
 > **Nota:** `ui-page`, `ui-group` e `ui-base` não aparecem na paleta — são criados
-> automaticamente ao configurar um widget. A paleta mostra apenas os **widgets**
-> (gauge, chart, text, button, switch, form, table, etc.).
+> automaticamente ao configurar um widget. Use o painel lateral "Dashboard 2.0"
+> para gerenciar páginas e grupos depois de criados.
 
 ### Widgets disponíveis na paleta
 
