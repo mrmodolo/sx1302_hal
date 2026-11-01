@@ -1,8 +1,8 @@
 # SX1302 LoRaWAN Gateway — Configuração Local
 
 Este documento descreve o setup do gateway LoRaWAN SX1302 em modo **local**, com
-captura de frames via **UDP listener em Python** (alternativa mais simples ao
-ChirpStack para uso residencial).
+captura de frames via **UDP listener em Python** e integração com **Node-RED**
+(alternativa mais simples ao ChirpStack para uso residencial).
 
 ## Arquitetura
 
@@ -10,15 +10,14 @@ ChirpStack para uso residencial).
 [Sensor(es) LoRaWAN] → [SX1302 via lora_pkt_fwd] → UDP 127.0.0.1:1700
                                                         ↓
                                           [Python UDP Listener]
+                                          (recv PUSH_DATA → decode → print + MQTT publish)
                                                         ↓
-                                imprime frame + fPort + payload (Base64)
+                                          [Mosquitto MQTT Broker] → [Node-RED MQTT in]
+                                                        ↓
+                                             [function: decodificar payload]
+                                                        ↓
+                                    debug / dashboard / banco de dados / alertas
 ```
-
-- O `lora_pkt_fwd` (packet forwarder Semtech) faz a demodulação e envia os frames
-  LoRaWAN via UDP (protocolo PUSH_DATA) para o server configurado em
-  `server_address:serv_port_up`.
-- No modo local, o `local_conf.json` aponta para `127.0.0.1:1700`.
-- O script Python escuta nessa porta e decodifica o JSON/PUSH_DATA.
 
 ## Arquivos
 
@@ -53,8 +52,14 @@ ChirpStack para uso residencial).
 
 ## Passo a passo (Raspberry Pi)
 
+### 1. Copiar arquivos para o RPi
+
 ```bash
-# Copiar listener
+# Forwarder + config
+sudo cp <repo>/contrib/systemd/local_conf.json /opt/sx1302_hal/
+sudo cp <repo>/contrib/systemd/lora_pkt_fwd_local.service /etc/systemd/system/
+
+# Listener
 sudo mkdir -p /opt/udp-listener
 sudo cp <repo>/contrib/python-udp-listener/lora_pkt_fwd_listener.py /opt/udp-listener/
 sudo cp <repo>/contrib/python-udp-listener/lora_pkt_fwd_local_listener.service /etc/systemd/system/
@@ -63,80 +68,45 @@ sudo systemctl daemon-reload
 # Se você tinha instalado a unit antiga (lora_pkt_fwd_listener.service), apague-a:
 sudo rm -f /etc/systemd/system/lora_pkt_fwd_listener.service
 sudo systemctl daemon-reload
-
-# Reiniciar forwarder + listener
-sudo systemctl restart lora_pkt_fwd_local
-sudo systemctl restart lora_pkt_fwd_local_listener
-
-# Habilitar listener pro boot
-sudo systemctl enable lora_pkt_fwd_local_listener
-
-# Logs
-sudo journalctl -u lora_pkt_fwd_local_listener -f
 ```
 
-## Integração com Node-RED
-
-O Node-RED não possui nó UDP nativo no core; o caminho mais simples para levar os
-frames UDP do SX1302 até o Node-RED é via **MQTT**.
-
-Arquitetura atualizada:
-
-```
-[Sensor(es) LoRaWAN] → [SX1302 via lora_pkt_fwd] → UDP 127.0.0.1:1700
-                                                        ↓
-                                          [Python UDP Listener]
-                                          (publica no MQTT: lora/gateway/RX)
-                                                        ↓
-                                          [Mosquitto MQTT Broker] → [Node-RED MQTT in]
-```
-
-### Arquivos relacionados
-
-- `contrib/python-udp-listener/lora_pkt_fwd_listener.py` — listener UDP que também publica no MQTT (`MQTT_HOST`, `MQTT_PORT`, `MQTT_TOPIC`).
-- `contrib/python-udp-listener/lora_gateway_rx.json` — flow exemplo do Node-RED (MQTT in → decode function → debug).
-
-### Passo a passo no Raspberry Pi
+### 2. Instalar dependências
 
 ```bash
-# 1. Instalar Mosquitto (broker MQTT)
+# Mosquitto (broker MQTT)
 sudo apt update
 sudo apt install -y mosquitto mosquitto-clients
 sudo systemctl enable --now mosquitto
 
-# 2. Instalar Node-RED
-#    Recomendado: script oficial do Node-RED para RPi/Debian
+# Node-RED (script oficial)
 bash <(curl -sL https://raw.githubusercontent.com/node-red/linux-installers/master/deb/update-nodejs-and-nodered)
 
-#    (alternativa manual, se preferir)
-# curl -sL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-# sudo apt install -y nodejs
-# sudo npm install -g node-red
-
-# Observacao: o script oficial cria o servico "nodered" (sem hifen).
-#   sudo systemctl enable --now nodered
-#   sudo journalctl -u nodered -f
-
-# 3. Instalar dependência MQTT do listener
+# Dependência MQTT do listener (forma correta no Debian)
 sudo apt install -y python3-paho-mqtt
-
-# 4. Reiniciar listener (publica no MQTT)
-sudo systemctl restart lora_pkt_fwd_local_listener
-
-# 5. Subir Node-RED e importar o flow
-#    - Acessar http://<ip-do-raspberry>:1880
-#    - Menu > Import > colar/importar o conteúdo de lora_gateway_rx.json
-#    - Deploy
 ```
 
-O flow importado contém 5 nós em cadeia:
+### 3. Iniciar serviços
+
+```bash
+sudo systemctl enable --now lora_pkt_fwd_local
+sudo systemctl enable --now lora_pkt_fwd_local_listener
+sudo systemctl enable --now nodered
+```
+
+### 4. Importar flow no Node-RED
+
+1. Acesse `http://phobos.local:1880`
+2. **Menu (≡) → Import** → selecionar `lora_gateway_rx.json`
+3. **Deploy**
+
+O flow contém 5 nós em cadeia:
 
 ```
 [MQTT in] → [function: Decodificar payload LoRa] → [debug]
 ```
 
-A função decodifica o Base64 do campo "data" e parseia o formato
-"T:25.3C,H:60.2%,N:1" em um objeto JSON:
+A função decodifica o Base64 do campo `data` e parseia o formato
+`T:25.3C,H:60.2%,N:1` em um objeto JSON:
 
 ```json
 {
@@ -177,14 +147,26 @@ msg.time = pkt.time;
 return msg;
 ```
 
-O Node-RED admin fica disponível em `http://<ip-do-raspberry>:1880`.
+### 5. Logs e verificação
+
+```bash
+# Logs do listener
+sudo journalctl -u lora_pkt_fwd_local_listener -f
+
+# Logs do Node-RED
+sudo journalctl -u nodered -f
+
+# Verificar serviços
+for s in mosquitto lora_pkt_fwd_local lora_pkt_fwd_local_listener nodered; do
+  echo -n "$s: "; systemctl is-active $s;
+done
+```
 
 ## Dashboard visual (Node-RED Dashboard 2.0)
 
 > ⚠️ **Node-RED 5.0 usa Dashboard 2.0** (`@flowfuse/node-red-dashboard`), não o
 > pacote legado `node-red-dashboard`. O pacote legado (3.6.6) é **incompatível**
-> com Node-RED 5.0 — por isso os nós `ui_gauge`, `ui_chart`, etc. aparecem como
-> "desconhecidos" ao importar.
+> com Node-RED 5.0.
 
 ### Instalar o Dashboard 2.0
 
@@ -193,18 +175,16 @@ O Node-RED admin fica disponível em `http://<ip-do-raspberry>:1880`.
 cd /home/mododo/.node-red
 npm install @flowfuse/node-red-dashboard
 sudo systemctl restart nodered
-
-# Verificar
-ls /home/mododo/.node-red/node_modules/@flowfuse/node-red-dashboard
 ```
 
 ### Criar o dashboard manualmente (recomendado)
 
-Como o Dashboard 2.0 tem um schema diferente do legado, a forma mais confiável
-é criar o dashboard **diretamente no editor** do Node-RED:
+O Dashboard 2.0 usa nós com **hífen** (`ui-gauge`, `ui-chart`, `ui-text`, `ui-page`,
+`ui-group`), não com underscore (`ui_gauge`). Eles aparecem na paleta do Node-RED
+na categoria **dashboard**.
 
 1. Acesse `http://phobos.local:1880`
-2. Na paleta esquerda, procure a categoria **dashboard** (deve aparecer após instalar o pacote)
+2. Na paleta esquerda, procure a categoria **dashboard**
 3. Arraste para o canvas:
    - **ui-page** (cria uma página do dashboard)
    - **ui-group** (cria um grupo dentro da página)
@@ -260,6 +240,39 @@ exemplo incluído no repositório:
 | Sync Word | `0x34` | Obrigatório — gateway SX1302 filtra por sync word LoRaWAN |
 | CRC | habilitado | Gateway marca `stat=1` (CRC OK) |
 
+O sketch envia dados simulados de sensores (temperatura, umidade) no formato
+`T:25.3C,H:60.2%,N:1` e exibe os dados no display OLED.
+
+## Persistência
+
+### O que sobrevive a um desligamento/reboot
+
+| Item | Persiste? | Onde fica |
+|---|---|---|
+| Serviços systemd (enabled) | ✅ Sim | `/etc/systemd/system/` |
+| `local_conf.json` / `global_conf.json` | ✅ Sim | `/opt/sx1302_hal/` |
+| Binário `lora_pkt_fwd` | ✅ Sim | `/opt/sx1302_hal/` |
+| Script Python listener | ✅ Sim | `/opt/udp-listener/` |
+| Flows do Node-RED | ✅ Sim | `/home/mododo/.node-red/flows.json` |
+| Credenciais Node-RED | ✅ Sim | `/home/mododo/.node-red/flows_cred.json` |
+| Config do Mosquitto | ✅ Sim | `/etc/mosquitto/` |
+| Config do Node-RED | ✅ Sim | `/home/mododo/.node-red/settings.js` |
+
+### Cuidados
+
+1. **Node-RED**: os flows só são salvos ao clicar em **Deploy**.
+2. **SD card**: desligue com `sudo shutdown -h now` (não puxar o cabo).
+3. **Backup**: copie `/home/mododo/.node-red/flows.json` periodicamente.
+
+## Observações importantes
+
+- **Node-RED 5.0** usa **Dashboard 2.0** (`@flowfuse/node-red-dashboard`), não o
+  pacote legado `node-red-dashboard`. O legado é incompatível com Node-RED 5.0.
+- Os nós do Dashboard 2.0 usam **hífen** (`ui-gauge`, `ui-chart`, `ui-text`,
+  `ui-page`, `ui-group`), não underscore (`ui_gauge`).
+- A instalação do Dashboard 2.0 deve ser feita no **userDir** do Node-RED:
+  `cd /home/mododo/.node-red && npm install @flowfuse/node-red-dashboard`.
+
 ## Commits relacionados
 
 - `7812978` feat: systemd config
@@ -295,3 +308,20 @@ exemplo incluído no repositório:
 - `b305e52` Merge pull request #1 from mrmododo/develop
 - `418ba1f` Add backup of original util_chip_id reset_lgw.sh
 - `b911263` Add pinctrl-based reset_lgw.sh to util_chip_id
+- `9ebe6df` docs: reference sx1276esp32 example sketch in contrib README
+- `03e4ec9` feat: send sensor data via LoRa and display on OLED
+- `3c2ae4a` docs: document payload decode function in node-red flow
+- `6e30d8f` feat: add payload decode function node to node-red flow
+- `3a5c7e6` docs: clarify node-red 5 uses dashboard 2.0 (@flowfuse)
+- `5a6a166` docs: use apt install python3-paho-mqtt (Debian best practice)
+- `133a71d` docs: recommend official node-red install script for RPi
+- `2191724` refactor: remove node-red.service unit (use official nodered.service)
+- `f6bec2d` fix: convert node-red flow to json array format
+- `8570836` fix: remove invalid props from mqtt-broker config node (match node-red defaults)
+- `eef7c14` feat: add mqtt publishing to udp listener and node-red flow
+- `78d0090` docs: add contrib README documenting local LoRaWAN setup
+- `92d8245` refactor: move udp listener files to contrib/python-udp-listener
+- `20dfd04` feat: add python UDP listener for local LoRaWAN gateway
+- `5f5f3ec` feat: add local systemd service unit for local packet forwarder
+- `5151e43` feat: add local_conf.json for local LoRaWAN gateway operation
+- `7812978` feat: systemd config
