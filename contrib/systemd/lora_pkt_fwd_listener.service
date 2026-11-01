@@ -1,0 +1,15 @@
+[Unit]
+Description=SX1302 LoRaWAN UDP Listener (Python)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/sx1302_hal/
+ExecStart=/usr/bin/python3 /opt/sx1302_hal/lora_pkt_fwd_listener.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
