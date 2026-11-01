@@ -1,0 +1,277 @@
+[
+    {
+        "id": "flow_loRaGatewayRx",
+        "type": "tab",
+        "label": "LoRa Gateway RX",
+        "disabled": false,
+        "info": "Recebe frames LoRaWAN do gateway SX1302 via MQTT, decodifica o payload e exibe num dashboard.",
+        "env": []
+    },
+    {
+        "id": "ui_tab_lora",
+        "type": "ui_tab",
+        "name": "LoRa Gateway",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "ui_group_sensores",
+        "type": "ui_group",
+        "name": "Sensores",
+        "tab": "ui_tab_lora",
+        "order": 1,
+        "disp": true,
+        "width": "6",
+        "collapse": false
+    },
+    {
+        "id": "ui_group_historico",
+        "type": "ui_group",
+        "name": "Histórico",
+        "tab": "ui_tab_lora",
+        "order": 2,
+        "disp": true,
+        "width": "6",
+        "collapse": false
+    },
+    {
+        "id": "ui_group_info",
+        "type": "ui_group",
+        "name": "Info do Pacote",
+        "tab": "ui_tab_lora",
+        "order": 3,
+        "disp": true,
+        "width": "6",
+        "collapse": false
+    },
+    {
+        "id": "mqtt_broker_local",
+        "type": "mqtt-broker",
+        "name": "Local Mosquitto",
+        "broker": "127.0.0.1",
+        "port": "1883",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 15,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "55668c4e8294384d",
+        "type": "mqtt in",
+        "z": "flow_loRaGatewayRx",
+        "name": "LoRa Gateway RX",
+        "topic": "lora/gateway/RX",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "mqtt_broker_local",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 130,
+        "y": 80,
+        "wires": [
+            [
+                "decode_payload"
+            ]
+        ]
+    },
+    {
+        "id": "decode_payload",
+        "type": "function",
+        "z": "flow_loRaGatewayRx",
+        "name": "Decodificar payload LoRa",
+        "func": "const pkt = msg.payload;\nif (!pkt || !pkt.data) {\n    return null;\n}\n\nconst raw = Buffer.from(pkt.data, 'base64').toString('utf8');\nmsg.rawPayload = raw;\n\nconst result = {};\nraw.split(',').forEach(part => {\n    const [key, val] = part.split(':');\n    const num = parseFloat(val);\n    if (key === 'T') result.temperature = num;\n    else if (key === 'H') result.humidity = num;\n    else if (key === 'N') result.packet = parseInt(val);\n});\n\nmsg.payload = result;\nmsg.rssi = pkt.rssi;\nmsg.snr = pkt.lsnr;\nmsg.freq = pkt.freq;\nmsg.time = pkt.time;\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 330,
+        "y": 80,
+        "wires": [
+            [
+                "gauge_temp",
+                "gauge_hum",
+                "text_info",
+                "change_temp_chart",
+                "debug_loRa"
+            ]
+        ]
+    },
+    {
+        "id": "gauge_temp",
+        "type": "ui_gauge",
+        "z": "flow_loRaGatewayRx",
+        "name": "Temperatura",
+        "group": "ui_group_sensores",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "Temperatura",
+        "label": "°C",
+        "format": "{{msg.payload.temperature}}",
+        "min": 0,
+        "max": "50",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "diff": false,
+        "x": 560,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "gauge_hum",
+        "type": "ui_gauge",
+        "z": "flow_loRaGatewayRx",
+        "name": "Umidade",
+        "group": "ui_group_sensores",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "Umidade",
+        "label": "%",
+        "format": "{{msg.payload.humidity}}",
+        "min": 0,
+        "max": "100",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "diff": false,
+        "x": 560,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "change_temp_chart",
+        "type": "change",
+        "z": "flow_loRaGatewayRx",
+        "name": "Extrair temperatura",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.temperature",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 560,
+        "y": 120,
+        "wires": [
+            [
+                "chart_temp"
+            ]
+        ]
+    },
+    {
+        "id": "chart_temp",
+        "type": "ui_chart",
+        "z": "flow_loRaGatewayRx",
+        "name": "Temperatura (histórico)",
+        "group": "ui_group_historico",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "label": "Temperatura (°C)",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "Aguardando dados...",
+        "dot": false,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": "1",
+        "removeOlderPoints": "100",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "x": 760,
+        "y": 120,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "text_info",
+        "type": "ui_text",
+        "z": "flow_loRaGatewayRx",
+        "group": "ui_group_info",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "name": "Info do Pacote",
+        "label": "Último pacote",
+        "format": "RSSI: {{msg.payload.rssi}} dBm | SNR: {{msg.payload.snr}} | Freq: {{msg.payload.freq}} MHz | Pkt #{{msg.payload.packet}}",
+        "layout": "row-spread",
+        "x": 560,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "debug_loRa",
+        "type": "debug",
+        "z": "flow_loRaGatewayRx",
+        "name": "LoRa RX Debug",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 560,
+        "y": 200,
+        "wires": []
+    }
+]

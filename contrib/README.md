@@ -173,6 +173,50 @@ return msg;
 O Node-RED admin fica disponível em `http://<ip-do-raspberry>:1880`.
 ```
 
+## Dashboard visual (Node-RED Dashboard)
+
+Para visualizar os dados dos sensores em tempo real, instale o pacote de dashboard:
+
+```bash
+# No Raspberry Pi
+sudo npm install -g node-red-dashboard
+sudo systemctl restart nodered
+```
+
+O flow `lora_dashboard.json` inclui:
+
+- **2 gauges** (temperatura °C e umidade %) no grupo "Sensores"
+- **1 gráfico de linha** (temperatura ao longo do tempo) no grupo "Histórico"
+- **1 texto** com RSSI, SNR, frequência e número do pacote no grupo "Info do Pacote"
+- **1 debug** (mensagens no painel lateral)
+
+### Como usar
+
+1. Acesse `http://phobos.local:1880`
+2. **Menu (≡) → Import** → selecionar `lora_dashboard.json`
+3. **Deploy**
+4. Acesse o dashboard em: `http://phobos.local:1880/ui`
+
+### Como ficaria o dashboard
+
+```
+┌─────────────────────────────────────────────┐
+│  LoRa Gateway Dashboard                     │
+├──────────────────┬──────────────────────────┤
+│  Sensores        │  Histórico               │
+│  ┌────┐ ┌────┐  │  ┌────────────────────┐  │
+│  │ 25 │ │ 60 │  │  │  ╱╲   ╱╲         │  │
+│  │ °C │ │ %  │  │  │ ╱  ╲ ╱  ╲        │  │
+│  └────┘ └────┘  │  └────────────────────┘  │
+├──────────────────┴──────────────────────────┤
+│  Info do Pacote                             │
+│  RSSI: -45 dBm | SNR: 8.5 | Freq: 904.3   │
+│  MHz | Pkt #1                              │
+└─────────────────────────────────────────────┘
+```
+
+> O dashboard atualiza automaticamente a cada pacote recebido do ESP32.
+
 ## Teste com dispositivo ESP32 + SX1276
 
 Para validar a recepção do gateway sem um network server completo, use o sketch de
