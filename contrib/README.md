@@ -126,6 +126,50 @@ sudo systemctl restart lora_pkt_fwd_local_listener
 #    - Menu > Import > colar/importar o conteúdo de lora_gateway_rx.json
 #    - Deploy
 
+O flow importado contém 5 nós em cadeia:
+
+    [MQTT in] → [function: Decodificar payload LoRa] → [debug]
+
+A função decodifica o Base64 do campo "data" e parseia o formato
+"T:25.3C,H:60.2%,N:1" em um objeto JSON:
+
+    {
+      "temperature": 25.3,
+      "humidity": 60.2,
+      "packet": 1,
+      "rssi": -45,
+      "snr": 8.5,
+      "freq": 904.3,
+      "time": "2026-11-01T20:00:00.000000Z"
+    }
+
+Código da função (caso queira criar manualmente no Node-RED):
+
+```javascript
+const pkt = msg.payload;
+if (!pkt || !pkt.data) { return null; }
+
+const raw = Buffer.from(pkt.data, 'base64').toString('utf8');
+msg.rawPayload = raw;
+
+const result = {};
+raw.split(',').forEach(part => {
+    const [key, val] = part.split(':');
+    const num = parseFloat(val);
+    if (key === 'T') result.temperature = num;
+    else if (key === 'H') result.humidity = num;
+    else if (key === 'N') result.packet = parseInt(val);
+});
+
+msg.payload = result;
+msg.rssi = pkt.rssi;
+msg.snr = pkt.lsnr;
+msg.freq = pkt.freq;
+msg.time = pkt.time;
+
+return msg;
+```
+
 O Node-RED admin fica disponível em `http://<ip-do-raspberry>:1880`.
 ```
 
